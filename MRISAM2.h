@@ -206,6 +206,11 @@ class MRISAM2 : public MRBayesTree<GaussianBayesTree, GaussianFactorGraph> {
 
   Values calculateBestEstimate();
 
+  const Value& calculateEstimate(Key key) const{
+    const Vector& delta=delta_.at(key);
+    return *theta_.at(key).retract_(delta);
+  }
+
  protected:
   MRISAM2Params params_;
 

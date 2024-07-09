@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <filesystem>
 
-namespace fs = std::__fs::filesystem;
+namespace fs = std::filesystem;
 
 namespace gtsam {
 

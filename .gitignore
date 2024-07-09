@@ -3,3 +3,7 @@ build/
 .vscode/
 visualization/
 .DS_Store
+
+build/
+compile_commands.json
+.cache/
