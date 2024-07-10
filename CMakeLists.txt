@@ -11,6 +11,8 @@ include(GtsamMakeConfigFile)
 include(GtsamBuildTypes)
 include(GtsamTesting)
 
+find_package(aria_common REQUIRED)
+
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIR})
 
@@ -19,8 +21,10 @@ file(GLOB headers "*.h")
 
 include_directories(".")
 
+include_directories(${aria_common_INCLUDE_DIRS})
+
 add_library(mr_isam2 SHARED ${sources} ${headers})
-target_link_libraries(mr_isam2 ${GTSAM_LIBS})
+target_link_libraries(mr_isam2 ${GTSAM_LIBS} ${aria_common_LIBRARIES})
 set_target_properties(mr_isam2 PROPERTIES LINKER_LANGUAGE CXX)
 
 

@@ -26,7 +26,7 @@ struct MRISAM2Result;
  * incremental nonlinear optimization.
  */
 class MRISAM2 : public MRBayesTree<GaussianBayesTree, GaussianFactorGraph> {
- public:
+public:
   typedef MRBayesTree<GaussianBayesTree, GaussianFactorGraph> MRBT;
 
   MRISAM2() : MRBT(), params_(MRISAM2Params()) {}
@@ -39,30 +39,27 @@ class MRISAM2 : public MRBayesTree<GaussianBayesTree, GaussianFactorGraph> {
    * @param other_root_keys_map   map from root_id to keys in other roots
    * @param params  mrisam2 params
    */
-  MRISAM2(const NonlinearFactorGraph& graph, const Values& values,
-          const Ordering& order, const RootID root_id,
-          const RootKeySetMap& other_root_keys_map,
-          const MRISAM2Params& params = MRISAM2Params())
-      : MRISAM2(graph, *graph.linearize(values), values, order, root_id, other_root_keys_map,
-                params) {}
+  MRISAM2(const NonlinearFactorGraph &graph, const Values &values,
+          const Ordering &order, const RootID root_id,
+          const RootKeySetMap &other_root_keys_map,
+          const MRISAM2Params &params = MRISAM2Params())
+      : MRISAM2(graph, *graph.linearize(values), values, order, root_id,
+                other_root_keys_map, params) {}
 
-  MRISAM2(const NonlinearFactorGraph& nonlinear_factors,
-          const GaussianFactorGraph& linear_factors, const Values& values,
-          const Ordering& order, const RootID root_id,
-          const RootKeySetMap& other_root_keys_map,
-          const MRISAM2Params& params)
+  MRISAM2(const NonlinearFactorGraph &nonlinear_factors,
+          const GaussianFactorGraph &linear_factors, const Values &values,
+          const Ordering &order, const RootID root_id,
+          const RootKeySetMap &other_root_keys_map, const MRISAM2Params &params)
       : MRBT(linear_factors, order, root_id, other_root_keys_map, false,
              params.eliminate_function),
-        params_(params),
-        nonlinear_factors_(nonlinear_factors),
+        params_(params), nonlinear_factors_(nonlinear_factors),
         linear_factors_(linear_factors),
-        variable_index_(VariableIndex(linear_factors)),
-        theta_(values),
-        delta_(values.zeroVectors())
-        {
-          SharedClique root_clique = roots_.begin()->second;
-          computeDelta(root_clique, root_clique, linear_factors_, variable_index_, delta_);
-        }
+        variable_index_(VariableIndex(linear_factors)), theta_(values),
+        delta_(values.zeroVectors()) {
+    SharedClique root_clique = roots_.begin()->second;
+    computeDelta(root_clique, root_clique, linear_factors_, variable_index_,
+                 delta_);
+  }
 
   /** mark cliques that has any of specified keys as frontal variables, or
    * include relinearized variables, and all cliques on the path from such
@@ -73,8 +70,8 @@ class MRISAM2 : public MRBayesTree<GaussianBayesTree, GaussianFactorGraph> {
    * @return set of marked cliques
    */
   CliqueSet markCliques(const SharedClique root_clique,
-                        const KeySet& involved_keys,
-                        const KeySet& relin_keys) const;
+                        const KeySet &involved_keys,
+                        const KeySet &relin_keys) const;
 
   /** remove top at corresponding root, and return the factor graph and orphans
    * @param root_id        specified root
@@ -84,19 +81,20 @@ class MRISAM2 : public MRBayesTree<GaussianBayesTree, GaussianFactorGraph> {
    * @return the edges cut (points toward orphans)
    */
   EdgeVector extractTop(const SharedClique root_clique,
-                        const CliqueSet& top_cliques,
-                        FactorIndices& top_factor_indices,
-                        KeySet& top_keys) const;
+                        const CliqueSet &top_cliques,
+                        FactorIndices &top_factor_indices,
+                        KeySet &top_keys) const;
 
   /** connect orphans to the new top
    * @param root_id         specified root
    * @param new_top_mrbt    newly created top part of tree
    * @param orphan_edges    old edges connecting to orphan subtrees
    */
-  EdgeVector connectOrphans(const RootID root_id, MRBT& new_top_mrbt,
-                            const EdgeVector& orphan_edges);
+  EdgeVector connectOrphans(const RootID root_id, MRBT &new_top_mrbt,
+                            const EdgeVector &orphan_edges);
 
-  static Key findMostRecentStateKey(const RootID root_id, const SharedClique& root_clique);
+  static Key findMostRecentStateKey(const RootID root_id,
+                                    const SharedClique &root_clique);
 
   /** recreate the top part of the tree by re-eliminating the factor graph
    * (Note: the marginals, conditionals and deltas for the newly created cliques
@@ -108,11 +106,11 @@ class MRISAM2 : public MRBayesTree<GaussianBayesTree, GaussianFactorGraph> {
    * @param new_factor_keys keys associated with newly added factors
    * @return new edges connected to orphans
    */
-  EdgeVector recreateTop(const RootID root_id, CliqueSet& old_top_cliques,
-                         const FactorIndices& top_factor_indices,
-                         const EdgeVector& orphan_edges,
-                         const KeySet& new_factor_keys,
-                         MRISAM2Result& update_result);
+  EdgeVector recreateTop(const RootID root_id, CliqueSet &old_top_cliques,
+                         const FactorIndices &top_factor_indices,
+                         const EdgeVector &orphan_edges,
+                         const KeySet &new_factor_keys,
+                         MRISAM2Result &update_result);
 
   /** perform elimination in top part of the tree, set the marginals,
    * conditionals and deltas in top. (Note: for the boundary edges pointing
@@ -121,21 +119,23 @@ class MRISAM2 : public MRBayesTree<GaussianBayesTree, GaussianFactorGraph> {
    * @param boundary_edges  new edges created to connect orphans (point in the
    * direction toward orphans)
    */
-  void eliminateTop(const RootID root_id, const EdgeVector& boundary_edges);
+  void eliminateTop(const RootID root_id, const EdgeVector &boundary_edges);
 
+  double marginalChangeByGradient(const SharedFactor &old_marginal,
+                                  const SharedFactor &new_marginal) const;
 
-  double marginalChangeByGradient(const SharedFactor& old_marginal, const SharedFactor& new_marginal) const;
-
-  double marginalChangeByKLD(const SharedFactor& old_marginal, const SharedFactor& new_marginal) const;
+  double marginalChangeByKLD(const SharedFactor &old_marginal,
+                             const SharedFactor &new_marginal) const;
 
   /** compare two marginals by their KL Divergence */
-  bool marginalChanged(const SharedFactor& old_marginal,
-                      const SharedFactor& new_marginal) const;
+  bool marginalChanged(const SharedFactor &old_marginal,
+                       const SharedFactor &new_marginal) const;
 
-  void propagateDeltaRecursive(const SharedEdge& edge, MRISAM2Result& update_result);
+  void propagateDeltaRecursive(const SharedEdge &edge,
+                               MRISAM2Result &update_result);
 
-  void propagateMarginalsRecursive(const SharedEdge& edge, MRISAM2Result& update_result);
-
+  void propagateMarginalsRecursive(const SharedEdge &edge,
+                                   MRISAM2Result &update_result);
 
   /** propagate marginals outside from the top tree
    * @param root_id         specified root
@@ -143,12 +143,12 @@ class MRISAM2 : public MRBayesTree<GaussianBayesTree, GaussianFactorGraph> {
    * direction toward orphans)
    */
   void propagateMarginals(const RootID root_id,
-                          const EdgeVector& boundary_edges,
-                          MRISAM2Result& update_result);
+                          const EdgeVector &boundary_edges,
+                          MRISAM2Result &update_result);
 
   /** compute delta with a wildfire spread from the boundary edges */
-  void propagateDeltas(const RootID root_id, const EdgeVector& boundary_edges,
-                       MRISAM2Result& update_result);
+  void propagateDeltas(const RootID root_id, const EdgeVector &boundary_edges,
+                       MRISAM2Result &update_result);
 
   // VectorValues computeEstimates(const RootID root_id,
   //                               const CliqueSet& top_cliques);
@@ -157,8 +157,8 @@ class MRISAM2 : public MRBayesTree<GaussianBayesTree, GaussianFactorGraph> {
    * values should be provided for all new appeared variables, while no other
    * variables are included */
   void updateRootCheck(const RootID root_id,
-                       const NonlinearFactorGraph& new_factors,
-                       const Values& new_theta);
+                       const NonlinearFactorGraph &new_factors,
+                       const Values &new_theta);
 
   /** update at a root with new factors and new values
    * @param root_id       specified root
@@ -166,52 +166,68 @@ class MRISAM2 : public MRBayesTree<GaussianBayesTree, GaussianFactorGraph> {
    * @param new_theta     initial estimate for new variables
    * @param do_relinearization  perform relinearization in this update step
    */
-  MRISAM2Result updateRoot(const RootID root_id, const NonlinearFactorGraph& new_factors,
-                  const Values& new_theta, const bool do_relinearization = false);
+  MRISAM2Result
+  updateRoot(const RootID root_id, const NonlinearFactorGraph &new_factors,
+             const Values &new_theta, const bool do_relinearization = false,
+             const FactorIndices &removeFactorIndices = FactorIndices());
 
   /** recursively find the keys that need relinearization
    * @param parent        parent clique
    * @param clique        current clique
    * @param relin_keys    (return) keys to be relinearized
    */
-  void checkRelinearizationRecursive(const SharedClique& parent,
-                                     const SharedClique& clique,
-                                     KeySet& relin_keys) const;
+  void checkRelinearizationRecursive(const SharedClique &parent,
+                                     const SharedClique &clique,
+                                     KeySet &relin_keys) const;
 
   /** gather keys that need relinearization */
-  KeySet gatherRelinearizeKeys(const SharedClique& root_clique) const;
+  KeySet gatherRelinearizeKeys(const SharedClique &root_clique) const;
 
   /** gather existing keys involved in new factors */
-  KeySet gatherInvolvedKeys(const NonlinearFactorGraph& new_factors) const;
+  KeySet gatherInvolvedKeys(const NonlinearFactorGraph &new_factors) const;
 
   /** relinearize factors in top */
-  void relinearizeTop(const KeySet& top_keys,
-                      const FactorIndices& top_factor_indices);
+  void relinearizeTop(const KeySet &top_keys,
+                      const FactorIndices &top_factor_indices);
 
-  void addVariables(const Values& new_theta);
+  void addVariables(const Values &new_theta);
 
-  FactorIndices addFactors(const NonlinearFactorGraph& new_factors);
+  FactorIndices addFactors(const NonlinearFactorGraph &new_factors);
 
-  const NonlinearFactorGraph& nonlinearFactors() {return nonlinear_factors_; }
+  const NonlinearFactorGraph &nonlinearFactors() { return nonlinear_factors_; }
 
-  const GaussianFactorGraph& linearFactors() {return linear_factors_; }
+  const GaussianFactorGraph &linearFactors() { return linear_factors_; }
 
-  const VariableIndex& variableIndex() {return variable_index_; }
+  const VariableIndex &variableIndex() { return variable_index_; }
 
-  const Values& theta() {return theta_; }
+  const Values &theta() { return theta_; }
 
-  const VectorValues& delta() {return delta_; }
+  const VectorValues &delta() { return delta_; }
 
-  MRISAM2Params& params() {return params_; }
+  MRISAM2Params &params() { return params_; }
 
   Values calculateBestEstimate();
 
-  const Value& calculateEstimate(Key key) const{
-    const Vector& delta=delta_.at(key);
+  Values calculateEstimate() { return calculateBestEstimate(); }
+
+  const Value &calculateEstimate(Key key) const {
+    const Vector &delta = delta_.at(key);
     return *theta_.at(key).retract_(delta);
   }
 
- protected:
+  Matrix marginalCovariance(Key j) {
+    return marginalFactor(j, params_.eliminate_function)
+        ->information()
+        .inverse();
+  }
+
+  bool valueExists(Key key) const { return theta_.exists(key); }
+
+  const NonlinearFactorGraph &getFactorsUnsafe() const {
+    return nonlinear_factors_;
+  }
+
+protected:
   MRISAM2Params params_;
 
   NonlinearFactorGraph nonlinear_factors_;
@@ -237,4 +253,4 @@ struct MRISAM2Result {
   MRISAM2::CliqueSet top_cliques;
 };
 
-}  // namespace gtsam
+} // namespace gtsam
