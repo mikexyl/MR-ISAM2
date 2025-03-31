@@ -1,0 +1,18 @@
+version: '3'
+
+vars:
+  profile: 'Release'
+
+tasks:
+  build:
+    cmds:
+      - cmake --preset config-{{.profile}}
+      - cmake --build --preset build-{{.profile}}
+      # - sudo cmake --build --preset build --target install
+  
+  run-toy-graph:
+    dir: 'build/scripts'
+    cmds:
+      - ./run_toy_graph --filename ../../scripts/spiral_two_robots.g2o
+    
+

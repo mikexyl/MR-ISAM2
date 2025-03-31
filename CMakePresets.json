@@ -1,0 +1,44 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 23,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "config-Release",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "YES",
+        "GTSAM_DIR": "${sourceDir}/../gtsam/build/isam2_fast_marginal",
+        "GTSAMCMakeTools_DIR": "${sourceDir}/../gtsam/cmake",
+        "aria_viz_DIR": "${sourceDir}/../aria_viz/build",
+        "aria_common_DIR": "${sourceDir}/../aria_common/build"
+      }
+    },
+    {
+      "name": "config-Debug",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "inherits": "config-Release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "build-Release",
+      "configurePreset": "config-Release",
+      "jobs": 12
+    },
+    {
+      "name": "build-Debug",
+      "configurePreset": "config-Debug",
+      "jobs": 12
+    }
+  ]
+}

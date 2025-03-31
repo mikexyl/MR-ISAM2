@@ -234,8 +234,8 @@ int main() {
   // compute_gt();
 
   // runExpCT();
-  // runExpUTIAS();
-  createMRBTwithoutAnchor();
+  runExpUTIAS();
+  // createMRBTwithoutAnchor();
 
   return 0;
 }
