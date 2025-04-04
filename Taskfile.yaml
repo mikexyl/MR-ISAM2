@@ -13,6 +13,6 @@ tasks:
   run-toy-graph:
     dir: 'build/scripts'
     cmds:
-      - ./run_toy_graph --filename ../../scripts/spiral_two_robots.g2o
+      - ./run_toy_graph --filename ../../scripts/spiral_two_robots.g2o --show_details true
     
 

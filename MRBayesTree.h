@@ -5,7 +5,9 @@
 
 namespace gtsam {
 
-template <class BayesTreeType, class FactorGraphType> class MRBayesTree {
+template <class BayesTreeType = GaussianBayesTree,
+          class FactorGraphType = GaussianFactorGraph>
+class MRBayesTree {
 public:
   typedef MRBayesTree<BayesTreeType, FactorGraphType> This;
   typedef JunctionTree<BayesTreeType, FactorGraphType> JunctionTreeType;
@@ -224,12 +226,38 @@ public:
   /** perform dfs from the first root, and return all cliques */
   CliqueVector allCliques() const;
 
-  std::map<Key, SharedClique> nodes() const {
-    std::map<Key, SharedClique> nodes;
+  std::set<SharedClique> nodes() const {
+    std::set<SharedClique> nodes;
     for (const auto &clique : allCliques()) {
-      nodes.insert({*(clique->allKeys().begin()), clique});
+      nodes.insert(clique);
     }
     return nodes;
+  }
+
+  SharedEdge findCliqueByChildEdgeConditionalFrontal(Key key) const {
+    for (const auto &clique : allCliques()) {
+      for (const auto &edge : clique->childEdges()) {
+        auto it = std::find(edge->conditional()->beginFrontals(),
+                            edge->conditional()->endFrontals(), key);
+        if (it != edge->conditional()->endFrontals()) {
+          return edge;
+        }
+      }
+    }
+    return nullptr;
+  }
+
+  SharedEdge findCliqueByChildEdgeMarginal(Key key) const {
+    for (const auto &clique : allCliques()) {
+      for (const auto &edge : clique->childEdges()) {
+        auto it =
+            std::find(edge->marginal()->begin(), edge->marginal()->end(), key);
+        if (it != edge->marginal()->end()) {
+          return edge;
+        }
+      }
+    }
+    return nullptr;
   }
 
   NameCliqueMap getNameCliqueMap() const;
@@ -312,7 +340,7 @@ public:
       std::cout << clique->name(formatter) << ":\n";
       std::cout << "parent edges:\n";
       for (const auto &edge : clique->parentEdges()) {
-        std::cout << "\t" << edge->name(formatter) << "\n";
+        edge->print(formatter);
       }
       std::cout << "child edges:\n";
       for (const auto &edge : clique->childEdges()) {
@@ -321,58 +349,32 @@ public:
     }
   }
 
-  /** find the clique by key */
-  SharedClique findCliqueByKey(Key key) const {
-    auto it = nodes().find(key);
-    if (it != nodes().end()) {
-      std::cout << "looking for key " << key << ", found clique "
-                << it->second->name() << "\n";
-      it->second->print();
-      return it->second;
-    } else {
-      // print the keys of all cliques
-      std::cout << "looking for key " << key << ", not found\n";
-      for (const auto &[key, node] : nodes()) {
-        std::cout << MultiRobotKeyFormatter(key) << " ";
-      }
-      std::cout << "\n";
-      // flush the output
-      std::cout.flush();
-      throw std::runtime_error("Key not found in MRBayesTree: " +
-                               MultiRobotKeyFormatter(key));
-      return nullptr;
-    }
-  }
-
   Matrix marginalCovariance(Key key) const {
-    SharedClique clique = findCliqueByKey(key);
-    if (clique) {
-      SharedEdge parent_edge_has_key{nullptr};
-      for (const auto &edge : clique->parentEdges()) {
-        if (edge->parentClique()->allKeys().find(key) !=
-            edge->parentClique()->allKeys().end()) {
-          parent_edge_has_key = edge;
-          break;
-        }
+    FactorGraphType marginal_factors;
+    SharedEdge edge = findCliqueByChildEdgeMarginal(key);
+    if (!edge) {
+      edge = findCliqueByChildEdgeConditionalFrontal(key);
+      if (!edge) {
+        throw std::runtime_error("key not found in the tree");
       }
-      if (!parent_edge_has_key) {
-        throw std::runtime_error("Key not found in parent edge marginal.");
-      }
-      SharedFactor marginal_factor = parent_edge_has_key->marginal();
-      // check if marginals' key is the same as the key
-      if (marginal_factor->keys().size() != 1) {
-        // run elimination to get the marginal
-        FactorGraphType factors;
-        factors.push_back(marginal_factor);
-        // marginalize to get the marginal
-        auto bayes_net = *factors.marginalMultifrontalBayesNet(
-            Ordering{key}, EliminateCholesky);
-        return bayes_net.front()->information().inverse();
-      } else {
-        return marginal_factor->information().inverse();
-      }
+      marginal_factors.push_back(edge->conditional());
+      marginal_factors.push_back(edge->marginal());
     } else {
-      throw std::runtime_error("Key not found in MRBayesTree");
+      marginal_factors.push_back(edge->marginal());
+    }
+    // check if marginals' key is the same as the key
+    // marginalize to get the marginal
+    try {
+      auto bayes_net = *marginal_factors.marginalMultifrontalBayesNet(
+          Ordering{key}, EliminateCholesky);
+      return bayes_net.front()->information().inverse();
+    } catch (const std::exception &e) {
+      std::cerr << "Error in marginal covariance: " << e.what() << std::endl;
+      marginal_factors.print("failed marginal factors for " +
+                             MultiRobotKeyFormatter(key));
+
+      this->printEdges();
+      return Matrix3::Zero();
     }
   }
 

@@ -14,8 +14,8 @@ ABSL_FLAG(bool, visualize_mrbt, false, "Visualize MRISAM2 Bayes tree");
 ABSL_FLAG(bool, show_details, false, "Show details of MRISAM2 update");
 
 template <> struct fmt::formatter<MRBT::Clique> {
-  constexpr auto
-  parse(fmt::format_parse_context &ctx) -> fmt::format_parse_context::iterator {
+  constexpr auto parse(fmt::format_parse_context &ctx)
+      -> fmt::format_parse_context::iterator {
     return ctx.begin();
   }
 
@@ -81,7 +81,7 @@ void drawBayesTree(rerun::RecordingStream *rec_, const std::string &entity_path,
   std::vector<std::string> cliques;
   std::vector<rerun::components::GraphEdge> edges;
   std::vector<rerun::components::Color> colors;
-  for (auto const &[key, clique] : bayes_tree.nodes()) {
+  for (auto const &clique : bayes_tree.nodes()) {
     if (!clique)
       continue;
     cliques.push_back(fmt::format("{}", *clique));
@@ -137,13 +137,13 @@ int main(int argc, char **argv) {
       gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector3(1e-3, 1e-3, 1e-3)));
 
   auto prior_b = BetweenFactor<Pose2>(
-      gtsam::Symbol('b', 0), gtsam::Symbol('a', 0), Pose2(-5, 0, 0),
-      gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector3(100, 100, 100)));
+      gtsam::Symbol('a', 0), gtsam::Symbol('b', 0), Pose2(5, 0, 0),
+      gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector3(10, 10, 10)));
 
   prior_graph.push_back(prior);
   prior_graph.push_back(prior_b);
   prior_values.insert(prior.key(), prior.prior());
-  prior_values.insert(prior_b.key(), prior.prior());
+  prior_values.insert(prior_b.keys().back(), Pose2(5, 0, 0));
 
   prior_graph.print("prior_graph");
 
@@ -163,7 +163,9 @@ int main(int argc, char **argv) {
     for (int j = 0; j < n_factor_per_step && i + j < graph->size(); ++j) {
       auto factor = graph->at(i + j);
       factors_step.push_back(factor);
-      auto keys = factor->keys();
+      factors_step.add(prior_graph);
+      prior_graph = {};
+      auto keys = factors_step.keys();
       for (const auto &key : keys) {
         if (not mrisam2->theta().exists(key)) {
           theta_step.insert_or_assign(key, Pose2(0, 0, 0));
@@ -177,7 +179,6 @@ int main(int argc, char **argv) {
                      DefaultKeyFormatter(factors_step.at(0)->keys()[0]),
                      DefaultKeyFormatter(factors_step.at(0)->keys()[1]), robot)
               << std::endl;
-    theta_step.print("theta_step");
 
     MRISAM2::RootID root_id = Symbol(robot, 0);
 
@@ -204,18 +205,9 @@ int main(int argc, char **argv) {
       visualizer.drawDotFile("graph/bayes_tree_dot", "mrbt.dot", false);
     }
 
-    mrisam2->printEdges();
-
-    // marginalize a random key
-    auto keys = mrisam2->theta().keys();
-    auto key = keys[std::rand() % keys.size()];
-    auto marginals = mrisam2->marginalCovariance(key);
-
     // sleep for 50ms
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
   }
-
-  mrisam2->calculateEstimate().print("final estimate");
 
   return 0;
 }

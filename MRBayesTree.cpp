@@ -138,8 +138,11 @@ MRBayesTree<BayesTreeType, FactorGraphType>::~MRBayesTree() {
 template <class BayesTreeType, class FactorGraphType>
 void MRBayesTree<BayesTreeType, FactorGraphType>::Edge::setEliminationResult(
     const EliminationResult &elimination_result) {
+  std::cout << "set elimination result for edge " << name() << "\n";
   conditional_ = elimination_result.first;
   marginal_ = elimination_result.second;
+  conditional_->print("\t conditional");
+  marginal_->print("\t marginal");
 }
 
 /* ************************************************************************* */
@@ -161,13 +164,17 @@ MRBayesTree<BayesTreeType, FactorGraphType>::Edge::elimFactorIndices(
 
   std::set<FactorIndex> factor_indices_set;
   // must have frontal keys
-  for (auto frontal_key : frontalKeys()) {
+  auto all_keys = childClique()->allKeys();
+  for (auto frontal_key : all_keys) {
+    std::cout << "frontal key: " << MultiRobotKeyFormatter(frontal_key) << "\n";
     for (auto factor_idx : vi[frontal_key]) {
       bool to_add = true;
       for (Key key : graph.at(factor_idx)->keys()) {
         // all keys should be either frontal or separator
         if (childClique()->allKeys().find(key) ==
             childClique()->allKeys().end()) {
+          std::cout << "skipped factor " << MultiRobotKeyFormatter(key)
+                    << std::endl;
           to_add = false;
           break;
         }
@@ -527,8 +534,9 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::eliminateNodeBottomUp(
     const FactorGraphType &graph, const VariableIndex &vi,
     const Eliminate &elimination_function,
     boost::optional<EdgeSet &> boundary_edges) {
-  // std::cout << "processing clique " << clique->name() << " from parent " <<
-  // parent->name() << "\n";
+  std::cout << "Eliminate node bottom up " << std::endl;
+  std::cout << "processing clique " << clique->name() << " from parent "
+            << parent->name() << "\n";
   FactorGraphType gathered_factors;
 
   // gather marginal information from chlid edges
@@ -552,6 +560,7 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::eliminateNodeBottomUp(
   // add the factors in the factor graph
   const SharedEdge &edge = clique->parentEdge(parent);
   gathered_factors.push_back(edge->elimFactors(graph, vi));
+  gathered_factors.print("gathered factors from bottom up");
 
   // perform elimination, and set elimination result
   auto frontal_keys = edge->frontalKeys();
@@ -568,6 +577,7 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::eliminateNodeTopDown(
     const FactorGraphType &graph, const VariableIndex &vi,
     const Eliminate &elimination_function,
     boost::optional<EdgeSet &> boundary_edges) {
+  std::cout << "Eliminate node top down" << std::endl;
   // set marginals for the edge clique->child
   if (clique != child) {
     SharedEdge edge = clique->childEdge(child);
@@ -590,6 +600,8 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::eliminateNodeTopDown(
 
     // std::cout << "set for edge topdown " << edge->name() << "\n";
     edge->setEliminationResult(elimination_result);
+  } else {
+    std::cout << "skip root clique" << std::endl;
   }
 
   // propagate to further edges
@@ -769,6 +781,7 @@ bool MRBayesTree<BayesTreeType, FactorGraphType>::checkMarginals() const {
     SharedClique current_clique, parent_clique;
     boost::tie(current_clique, parent_clique) = dfs.top();
     dfs.pop();
+    std::cout << "Checking clique " << current_clique->name() << "\n";
     if (parent_clique->isParentOf(current_clique)) {
       SharedEdge edge = parent_clique->childEdge(current_clique);
       std::string edge_name =

@@ -406,6 +406,7 @@ void MRISAM2::propagateMarginalsRecursive(const SharedEdge &edge,
   }
   gathered_factors.push_back(
       edge->elimFactors(linear_factors_, variable_index_));
+  gathered_factors.print("gathered factors");
   auto frontal_keys = edge->frontalKeys();
   Ordering ordering(frontal_keys.begin(), frontal_keys.end());
   auto elimination_result =
@@ -422,16 +423,17 @@ void MRISAM2::propagateMarginalsRecursive(const SharedEdge &edge,
   }
   update_result.propagated_marginal++;
   edge->setEliminationResult(elimination_result);
+  elimination_result.first->print("eliminated factors");
+  elimination_result.second->print("marginal factors");
 
   // propagate to further edges TODO: check why it takes so long
-  // if (params_.marginal_update_threshold <=0 || marginal_changed) {
-  //   for (const SharedClique& parent : clique->parentCliques()) {
-  //     if (parent != child) {
-  //       propagateMarginalsRecursive(parent->childEdge(clique),
-  //       update_result);
-  //     }
-  //   }
-  // }
+  if (params_.marginal_update_threshold <= 0 || marginal_changed) {
+    for (const SharedClique &parent : clique->parentCliques()) {
+      if (parent != child) {
+        propagateMarginalsRecursive(parent->childEdge(clique), update_result);
+      }
+    }
+  }
 }
 
 /* ************************************************************************* */

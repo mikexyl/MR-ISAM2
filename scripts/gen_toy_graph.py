@@ -197,9 +197,9 @@ def add_loop_closures_post_process(graph, poses_a, poses_b, loop_noise, threshol
 poses_a, poses_b = generate_spiral_trajectories(num_steps=80, offset_steps=0)
 
 # Build graph
-odom_noise = gtsam.noiseModel.Diagonal.Sigmas([0.05, 0.05, 0.02])
+odom_noise = gtsam.noiseModel.Diagonal.Sigmas([0.5, 0.5, 0.2])
 prior_noise = gtsam.noiseModel.Diagonal.Sigmas([0.01, 0.01, 0.01])
-loop_noise = gtsam.noiseModel.Diagonal.Sigmas([0.02, 0.02, 0.01])
+loop_noise = gtsam.noiseModel.Diagonal.Sigmas([0.2, 0.2, 0.1])
 
 graph, initial, id_map = build_graph_from_trajectories(poses_a, poses_b, odom_noise, prior_noise)
 
