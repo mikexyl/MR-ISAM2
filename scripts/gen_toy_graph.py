@@ -23,8 +23,8 @@ def create_spiral_robot_graph(num_steps=60, offset_steps=10, loop_threshold=0.7)
     current_id = 0
 
     # Noise models
-    odom_noise = noiseModel.Diagonal.Sigmas([0.05, 0.05, 0.02])
-    loop_noise = noiseModel.Diagonal.Sigmas([0.02, 0.02, 0.01])
+    odom_noise = noiseModel.Diagonal.Sigmas([0.5, 0.5, 0.2])
+    loop_noise = noiseModel.Diagonal.Sigmas([0.2, 0.2, 0.1])
     prior_noise = noiseModel.Diagonal.Sigmas([0.01, 0.01, 0.01])
 
     def add_vertex(sym, pose):
@@ -194,7 +194,7 @@ def add_loop_closures_post_process(graph, poses_a, poses_b, loop_noise, threshol
                 graph.add(BetweenFactorPose2(symbol('a', i), symbol('b', j), rel, loop_noise))
 
 # Generate
-poses_a, poses_b = generate_spiral_trajectories(num_steps=80, offset_steps=10)
+poses_a, poses_b = generate_spiral_trajectories(num_steps=80, offset_steps=0)
 
 # Build graph
 odom_noise = gtsam.noiseModel.Diagonal.Sigmas([0.05, 0.05, 0.02])
@@ -207,5 +207,5 @@ graph, initial, id_map = build_graph_from_trajectories(poses_a, poses_b, odom_no
 add_loop_closures_post_process(graph, poses_a, poses_b, loop_noise, threshold=0.6)
 
 # Save & Plot
-write_g2o(graph, initial, filename="spiral_postprocessed.g2o")
+write_g2o(graph, initial, filename="spiral_two_robots.g2o")
 plot_spiral_graph(initial, graph, id_map)

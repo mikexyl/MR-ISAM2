@@ -31,7 +31,7 @@ class MRBayesTree {
   typedef std::map<std::string, SharedClique> NameCliqueMap;
   typedef std::map<std::string, SharedEdge> NameEdgeMap;
 
-  typedef int RootID;
+  typedef Key RootID;
   typedef std::map<RootID, Key> RootKeyMap;
   typedef std::map<RootID, KeySet> RootKeySetMap;
   typedef std::map<RootID, SharedClique> RootCliqueMap;
@@ -206,6 +206,14 @@ class MRBayesTree {
 
   /** perform dfs from the first root, and return all cliques */
   CliqueVector allCliques() const;
+
+  std::map<Key, SharedClique> nodes() const {
+    std::map<Key, SharedClique> nodes;
+    for (const auto &clique : allCliques()) {
+      nodes.insert({*(clique->allKeys().begin()), clique});
+    }
+    return nodes;
+  }
 
   NameCliqueMap getNameCliqueMap() const;
 

@@ -1133,15 +1133,15 @@ std::string keysToString(const KeySet& keys, const KeyFormatter& key_formatter) 
     if (!is_first) {
       str+=",";
     }
-    std::string formatted_key;
-    LabeledSymbol symbol(key);
-    if (symbol.chr() == 'L') {
-      formatted_key = "L" + std::to_string(symbol.index());
-    }
-    else {
-      char robot_chr = symbol.label() - 1;
-      formatted_key = robot_chr + std::to_string(symbol.index());
-    }
+    std::string formatted_key=DefaultKeyFormatter(key);
+    // LabeledSymbol symbol(key);
+    // if (symbol.chr() == 'L') {
+    //   formatted_key = "L" + std::to_string(symbol.index());
+    // }
+    // else {
+    //   char robot_chr = symbol.label() - 1;
+    //   formatted_key = robot_chr + std::to_string(symbol.index());
+    // }
     str += formatted_key;
     is_first = false;
   }

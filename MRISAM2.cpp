@@ -612,7 +612,7 @@ MRISAM2Result MRISAM2::updateRoot(const RootID root_id,
   SharedClique root_clique = roots_.at(root_id);
   if (params_.show_details) {
     // std::cout << "\033[1;31mbold red text\033[0m\n";
-    std::cout << "\033[1;31mupdate root at " << root_id << " with clique " << root_clique->name() << "\033[0m\n";
+    std::cout << "\033[1;31mupdate root at " << DefaultKeyFormatter(root_id) << " with clique " << root_clique->name() << "\033[0m\n";
   }
 
   std::vector<clock_t> times;
