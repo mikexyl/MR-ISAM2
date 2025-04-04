@@ -20,7 +20,7 @@ file(GLOB headers "*.h")
 include_directories(".")
 
 add_library(mr_isam2 SHARED ${sources} ${headers})
-target_link_libraries(mr_isam2 ${GTSAM_LIBS})
+target_link_libraries(mr_isam2 gtsam)
 set_target_properties(mr_isam2 PROPERTIES LINKER_LANGUAGE CXX)
 
 

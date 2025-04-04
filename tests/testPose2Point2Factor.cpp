@@ -21,10 +21,10 @@ TEST(PoseFactor, error) {
   Point2 point(0, 2);
   Point2 measure(1, 1);
 
-
   Key pose_key = Symbol('p', 0);
   Key point_key = Symbol('p', 1);
-  noiseModel::Gaussian::shared_ptr cost_model = noiseModel::Gaussian::Covariance(gtsam::I_2x2);
+  noiseModel::Gaussian::shared_ptr cost_model =
+      noiseModel::Gaussian::Covariance(gtsam::I_2x2);
 
   Pose2Point2Factor factor(pose_key, point_key, measure, cost_model);
   auto actual_errors = factor.evaluateError(pose, point);

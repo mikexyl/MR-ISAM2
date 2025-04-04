@@ -13,7 +13,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "YES",
-        "GTSAM_DIR": "${sourceDir}/../gtsam/build/isam2_fast_marginal",
+        "GTSAM_DIR": "${sourceDir}/../gtsam/build/original",
         "GTSAMCMakeTools_DIR": "${sourceDir}/../gtsam/cmake",
         "aria_viz_DIR": "${sourceDir}/../aria_viz/build",
         "aria_common_DIR": "${sourceDir}/../aria_common/build"

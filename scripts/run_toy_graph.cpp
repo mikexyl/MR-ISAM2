@@ -10,10 +10,12 @@ using namespace aria;
 using MRBT = MRISAM2::MRBT;
 
 ABSL_FLAG(std::string, filename, "data/toy_graph.g2o", "Input file name");
+ABSL_FLAG(bool, visualize_mrbt, false, "Visualize MRISAM2 Bayes tree");
+ABSL_FLAG(bool, show_details, false, "Show details of MRISAM2 update");
 
 template <> struct fmt::formatter<MRBT::Clique> {
-  constexpr auto parse(fmt::format_parse_context &ctx)
-      -> fmt::format_parse_context::iterator {
+  constexpr auto
+  parse(fmt::format_parse_context &ctx) -> fmt::format_parse_context::iterator {
     return ctx.begin();
   }
 
@@ -146,7 +148,7 @@ int main(int argc, char **argv) {
   prior_graph.print("prior_graph");
 
   MRISAM2Params params;
-  params.show_details = true;
+  params.show_details = absl::GetFlag(FLAGS_show_details);
   std::unique_ptr<MRISAM2> mrisam2 = std::make_unique<MRISAM2>(
       prior_graph, prior_values, gtsam::Ordering::Colamd(prior_graph),
       Symbol('a', 0), other_root_keys_map, params);
@@ -197,11 +199,18 @@ int main(int argc, char **argv) {
     visualizer.drawFactors("graph/factors", factors, estimates,
                            getColors(factors), 2.f);
 
-    drawBayesTree(visualizer.rec(), "graph/bayes_tree", *mrisam2,
-                  Eigen::Vector4f(0, 0, 255, 255), 0.1f, false);
+    if (absl::GetFlag(FLAGS_visualize_mrbt)) {
+      mrisam2->saveGraph("mrbt.dot");
+      visualizer.drawDotFile("graph/bayes_tree_dot", "mrbt.dot", false);
+    }
 
-    mrisam2->saveGraph("mrbt.dot");
-    visualizer.drawDotFile("graph/bayes_tree_dot", "mrbt.dot", false);
+    mrisam2->printEdges();
+
+    // marginalize a random key
+    auto keys = mrisam2->theta().keys();
+    auto key = keys[std::rand() % keys.size()];
+    auto marginals = mrisam2->marginalCovariance(key);
+
     // sleep for 50ms
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
   }
